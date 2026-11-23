@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Form, useLocation } from "react-router";
 import { Button } from "~/components/ui/button";
 import { cn } from "~/lib/utils";
@@ -49,7 +49,23 @@ export function DevUI({
 }: DevUIProps) {
   const [minimized, setMinimized] = useState(false);
   const [open, setOpen] = useState(false);
+  const dropdownRef = useRef<HTMLDivElement>(null);
   const location = useLocation();
+
+  useEffect(() => {
+    if (!open) return;
+    function closeOnOutsidePointerDown(event: PointerEvent) {
+      if (!dropdownRef.current?.contains(event.target as Node)) setOpen(false);
+    }
+    document.addEventListener("pointerdown", closeOnOutsidePointerDown);
+    return () =>
+      document.removeEventListener("pointerdown", closeOnOutsidePointerDown);
+  }, [open]);
+
+  // Switching user submits a Form that redirects; close the list once the
+  // navigation lands.
+  useEffect(() => setOpen(false), [location.key]);
+
   if (minimized) {
     return (
       <div className="fixed bottom-4 right-4 z-50">
@@ -96,7 +112,7 @@ export function DevUI({
           </div>
         )}
 
-        <div className="relative">
+        <div ref={dropdownRef} className="relative">
           <Button
             size="sm"
             variant="outline"
